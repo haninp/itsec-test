@@ -41,9 +41,12 @@ Your Task:
 
 #### 4.Data Quality Assessment
 ##### 4.1.Completeness
-### 4.1 Completeness
 
-Berikut ini adalah penilaian kelengkapan (completeness) kolom berdasarkan hasil observasi dan praktik umum dalam log data cybersecurity:
+Penilaian kelengkapan dilakukan dengan mengukur keberadaan nilai null atau kosong pada setiap kolom berdasarkan karakteristik datanya. Kolom yang bersifat mandatory seperti Timestamp, Source IP Address, hingga Severity Level diharuskan memiliki isian lengkap untuk memastikan log dapat diinterpretasikan dengan benar dalam konteks keamanan.
+
+Berdasarkan analisis, beberapa kolom bersifat optional (nullable), seperti Payload Data atau Proxy Information, karena tidak semua traffic mencatat informasi tersebut. Namun, kami tetap melakukan evaluasi presentase kelengkapannya untuk mengidentifikasi potensi kesenjangan observabilitas.
+
+Berikut ini adalah tabel penilaian kelengkapan (completeness) kolom yang kami gunakan sebagai rujukan berdasarkan hasil observasi dan praktik umum dalam log data cybersecurity:
 
 | Kolom                   | Nullable? | Alasan                                                                 |
 |-------------------------|-----------|------------------------------------------------------------------------|
@@ -73,8 +76,21 @@ Berikut ini adalah penilaian kelengkapan (completeness) kolom berdasarkan hasil 
 | `IDS/IPS Alerts`        | ✅ Yes    | Kosong jika tidak dari IDS/IPS atau tidak trigger rule                 |
 | `Log Source`            | ✅ Yes    | Bisa kosong jika hanya dari satu source log (implisit)                 |
 
-##### 4.2.Uniqueness
-##### 4.3.Validity
+##### 4.2.Validity
+
+Validitas setiap kolom dievaluasi dengan menetapkan aturan eksplisit, seperti:
+	•	Format IP harus IPv4 yang valid dan tiap oktet bernilai 0–255
+	•	Port berada di rentang 0–65535
+	•	Timestamp sesuai standar waktu ISO
+	•	Protocol dan Traffic Type mengikuti daftar yang disahkan
+
+Selain itu, dilakukan validasi tambahan pada:
+	•	IP address: terhadap layanan Realtime Blackhole List (RBL) untuk mendeteksi apakah IP termasuk daftar sumber serangan publik
+	•	Device Information: mendeteksi user-agent yang sudah deprecated, seperti MSIE 5.0, yang sering diasosiasikan dengan aktivitas bot atau skrip otomatis.
+
+Semua pelanggaran validitas ini direkam dalam laporan _records.csv, yang mencantumkan baris-baris bermasalah serta kolom yang menyebabkan kegagalan validasi (misalnya: Destination IP Address (RBL), Device Information (Suspect Bot)).
+
+Dibawah ini adalah tabel yang kami jadikan rujukan untuk evaluasi validitas setiap kolom:
 
 | Kolom                   | Valid? | Aturan Validitas                                                                                 |
 |-------------------------|--------|---------------------------------------------------------------------------------------------------|
@@ -104,6 +120,23 @@ Berikut ini adalah penilaian kelengkapan (completeness) kolom berdasarkan hasil 
 | `IDS/IPS Alerts`        | ⚠️     | Valid jika berupa alert description; bisa beragam format                                         |
 | `Log Source`            | ⚠️     | Valid jika berupa string sumber log (misal: `Firewall`, `Server`, `SIEM`)                        |
 
+##### 4.3.Uniqueness
+
+Beberapa kolom seperti Timestamp, Source IP Address, Destination IP Address, dan Attack Signature dapat dikombinasikan untuk membentuk entitas unik (deduplicated view). Meskipun tidak seluruh baris terduplikasi, kami menemukan sejumlah kejadian yang mirip secara timestamp dan pola signature — indikasi potensi flood attack atau logging burst akibat automated attack.
+
+##### Candidate Key Combinations Used in Uniqueness Scoring
+
+Berikut adalah kombinasi kolom yang digunakan untuk menilai keunikan (uniqueness) data:
+
+| Kombinasi Kolom                                                      | Tujuan Penilaian Uniqueness                                                                      |
+|----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| Timestamp + Source IP Address + Destination IP Address + Attack Signature | Mendeteksi apakah log serangan spesifik terjadi lebih dari sekali secara persis                 |
+| Timestamp + Source IP Address + Destination Port                     | Mengungkap apakah sumber IP mengakses port target secara berulang pada waktu sama               |
+| Source IP Address + Destination IP Address + Protocol + Attack Type  | Mengidentifikasi pola serangan yang konsisten dari IP tertentu                                   |
+| Timestamp + Source IP Address + Protocol                             | Melihat kemungkinan flood/probing dari satu IP pada satu protokol dalam waktu sempit            |
+| Attack Type + Destination Port                                       | Mengevaluasi apakah satu jenis serangan difokuskan pada port tertentu                            |
+| Attack Signature + Severity Level                                    | Mencari tahu apakah signature yang sama muncul berulang dengan level severity yang identik       |
+
 #### 5.Data Cleaning Strategy
 ##### 5.1.Ringkasan langkah pembersihan:
 - Standarisasi
@@ -120,16 +153,22 @@ Berikut ini adalah penilaian kelengkapan (completeness) kolom berdasarkan hasil 
 - Korelasi anomali dengan severity level & attack signature
 
 ##### 6.2.Pattern & Signature Analysis
-- Attack signature paling sering muncul
-- Tipe serangan dominan (e.g., scanning, malware, brute force)
+Berdasarkan analisis pola kemunculan `Attack Signature` dalam jendela waktu sempit (1 hingga 10 menit), tidak ditemukan pola serangan signature yang berulang secara eksplisit dalam periode waktu tersebut. Dengan kata lain, tidak terdeteksi indikasi flood attack atau kampanye signature-based automated attack dalam dataset ini berdasarkan signature yang identik dalam waktu singkat.
+
+Namun demikian, kami tetap mengevaluasi potensi aktivitas abnormal lainnya dengan pendekatan alternatif, seperti:
+- IP source yang melakukan banyak serangan dalam waktu singkat
+- Pola burst yang terindikasi dari kombinasi timestamp yang rapat
+
+Analisis ini lebih cocok dikategorikan dalam evaluasi perilaku sumber serangan (source behavior analysis) ketimbang anomali berbasis duplikasi atau signature.
 
 ##### 6.3.Source Attribution
 - IP atau lokasi geografis yang sering muncul sebagai sumber
 - Perangkat/segmen jaringan yang paling sering menjadi target
 
 ##### 6.4.Temporal Trend
-- Waktu puncak serangan
-- Adakah indikasi campaign terkoordinasi?
+- **Flooding attack** atau **automated scan**
+- Pengulangan serangan dari host/actor yang sama
+- Aktivitas botnet atau skrip otomatis - Pola signature yang berulang tersebut tidak termasuk duplikasi data secara literal, namun mencerminkan pola kampanye serangan terkoordinasi atau noise akibat deteksi IDS yang agresif.
 
 ##### 6.5.Insider Threat / Lateral Movement Detection
 - User/device yang menunjukkan perilaku abnormal
@@ -144,7 +183,50 @@ Fokus pada dua area:
 - Data Quality Improvement (e.g., sistem log harus enkripsi data penting, normalisasi field lebih awal).
 - Security Monitoring & Detection (e.g., perlu fine-tuning IDS rule, tambahkan indikator GeoIP block).
 
+
 #### 9.Appendix
 - Dictionary kolom (glosarium).
 - Log tambahan atau contoh deteksi.
 - Skrip pembersihan data (jika disertakan).
+
+##### Example SQL Queries for Pattern Analysis
+
+Berikut ini adalah contoh query SQL yang digunakan dalam proses analisis pola serangan dan validasi anomali berdasarkan signature atau perilaku sumber serangan:
+
+1. Query untuk mendeteksi signature yang muncul lebih dari 5 kali dalam 1 menit:
+```sql
+SELECT
+    "Attack Signature",
+    date_trunc('minute', CAST("Timestamp" AS TIMESTAMP)) AS minute_window,
+    COUNT(*) AS occurrence
+FROM cybersecurity_attacks_fixed
+GROUP BY "Attack Signature", minute_window
+HAVING COUNT(*) >= 5
+ORDER BY occurrence DESC;
+```
+
+2. Query untuk mendeteksi serangan berulang dari satu IP dalam waktu singkat:
+```sql
+SELECT
+    "Source IP Address",
+    "Attack Signature",
+    COUNT(*) AS total_hits,
+    MIN(CAST("Timestamp" AS TIMESTAMP)) AS first_seen,
+    MAX(CAST("Timestamp" AS TIMESTAMP)) AS last_seen
+FROM cybersecurity_attacks_fixed
+GROUP BY "Source IP Address", "Attack Signature"
+HAVING COUNT(*) >= 10
+ORDER BY total_hits DESC;
+```
+
+3. Query untuk mendeteksi burst aktivitas berdasarkan signature per 10 menit:
+```sql
+SELECT
+    "Attack Signature",
+    FLOOR(EXTRACT(epoch FROM CAST("Timestamp" AS TIMESTAMP)) / 600) AS time_bucket_10min,
+    COUNT(*) AS count_per_10min
+FROM cybersecurity_attacks_fixed
+GROUP BY "Attack Signature", time_bucket_10min
+HAVING COUNT(*) >= 8
+ORDER BY count_per_10min DESC;
+```

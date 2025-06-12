@@ -49,3 +49,13 @@ columns_metadata = {
     "IDS/IPS Alerts": {"nullable": True, "validity": 'TRUE'},
     "Log Source": {"nullable": True, "validity": 'TRUE'}
 }
+
+
+
+# Kolom kombinasi kunci kandidat
+candidate_keys = [
+    ["Timestamp", "Source IP Address", "Destination IP Address", "Attack Signature"],
+    ["Timestamp", "Source IP Address", "Destination Port"],
+    ["Timestamp", "Source IP Address", "Protocol"],
+    ["Source IP Address", "Destination IP Address", "Protocol", "Attack Type"]
+]

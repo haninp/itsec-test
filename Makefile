@@ -35,6 +35,14 @@ scoring_validity:
 		--input file/$(FILE).csv \
 		--output file/$(FILE)_score_validity.csv
 
+deduplication:
+	docker run --rm \
+		-v "./soal1/file:/app/file" \
+		data_scoring:0 \
+		--dimension uniqueness.py \
+		--input file/cybersecurity_attacks_fixed.csv \
+		--output file/cybersecurity_attacks_fixed_score_uniqueness.csv
+
 update_rbl:
 	docker run --rm \
 		--entrypoint python \
