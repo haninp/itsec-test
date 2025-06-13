@@ -17,7 +17,7 @@ This repository contains the solution to a cybersecurity-themed take-home assess
 - Detect and explain data anomalies.
 - Derive actionable security insights based on pattern, signature, reputation (e.g., RBL), and heuristics.
 
-**[Open Task 1 Report →](./task1.md)**
+**[Open Task 1 Report →](./Task1.md)**
 
 ---
 
@@ -36,7 +36,7 @@ Build a minimal Gentoo-based Linux system using a musl-based stage 3 archive. Th
 - Be based on **musl**, with multilib disabled.
 - Produce an image in **qcow2** or **raw** format that can boot under QEMU full system emulation.
 
-**[Open Task 2 Report →](./task2.md)**
+**[Open Task 2 Report →](./Task2.md)**
 
 ---
 Hani Perkasa |
