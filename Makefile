@@ -59,3 +59,12 @@ generate_dummy_rbl_cache:
 		dummy_rbl_cache.py \
 		--input file/$(FILE).csv
 		--blacklist-rate 0.05
+
+qemu_installer:
+	qemu-system-x86_64 \
+		-m 1024 \
+		-boot d \
+		-cdrom soal2/gentoo-musl/iso/alpine-extended-3.19.1-x86_64.iso \
+		-hda soal2/gentoo-musl/image/gentoo-musl.qcow2 \
+		-net nic -net user \
+		-nographic

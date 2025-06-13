@@ -1,5 +1,0 @@
-Tanggal Scoring,Kombinasi Kolom,Total Baris,Baris Unik,Jumlah Duplikat,Uniqueness Score (%),Status
-2025-06-12 02:46:40,Timestamp + Source IP Address + Destination IP Address + Attack Signature,40000,40000,0,100.0,PASS
-2025-06-12 02:46:40,Timestamp + Source IP Address + Destination Port,40000,40000,0,100.0,PASS
-2025-06-12 02:46:40,Timestamp + Source IP Address + Protocol,40000,40000,0,100.0,PASS
-2025-06-12 02:46:40,Source IP Address + Destination IP Address + Protocol + Attack Type,40000,40000,0,100.0,PASS
