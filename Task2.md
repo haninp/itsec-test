@@ -19,6 +19,7 @@ This report details the attempt to build a minimal Gentoo Linux system using Sta
 
   **hvf/KVM not supported**
   ![hvf not supported](./soal2/docs/nosupporthvf.png)
+  
   **overheat CPU process**
   ![overheat CPU process](./soal2/docs/used100cpu.png)
   
